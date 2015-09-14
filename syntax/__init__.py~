@@ -1,0 +1,51 @@
+
+class Bench(object):
+    __type__ = 'Bench'
+    pass
+
+black = (0, 0, 0)
+red = (255, 0, 0)
+green = (0, 255, 0)
+blue = (0, 0, 255)
+
+
+class Plot(object):
+    __type__ = 'Plot'
+    def plot(self, x, y, color=black):
+        if not hasattr(self, '_items'):
+            self._items = []
+        self._items.append(('line', x, y, color))
+    def scatter(self, x, y, color=black):
+        if not hasattr(self, '_items'):
+            self._items = []
+        self._items.append(('scatter', x, y, color))
+    def xlabel(self, xlabel, unit=None):
+        self._xlabel = xlabel
+        self._xunit = unit
+    def ylabel(self, ylabel, unit=None):
+        self._ylabel = ylabel
+        self._yunit = unit
+    def __eq__(self, plt):
+        return self._items == plt._items and
+               self._xlabel == plt._xlabel and self._xunit == plt._xunit and
+               self._ylabel == plt._ylabel and self._yunit == plt._yunit
+               
+               
+        
+
+def linspace(start, stop, num=0, step=None):
+    start = float(start)
+    stop = float(stop)
+    if step == None:
+        if num == 1:
+	     step = stop-start
+	else:
+    	     step = (stop-start)/(float(num)-1.0)
+    else:
+        step = float(step)
+	if step == 0.0:
+	    num = 0
+	else:
+	    num = (stop-start)/step+1.0
+    return [i*step+start for i in xrange(int(round(num)))]
+  
