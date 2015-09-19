@@ -95,8 +95,10 @@ class DockDataTreeSubWindow(QtGui.QDockWidget):
 
     def __init__(self, parent):
         super(DockDataTreeSubWindow,self).__init__(parent)
-        self.setWindowTitle( 'Variables\' Data' )
+        self.setWindowTitle( 'Project Manager' )
         self.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea)
+        self.setMinimumWidth(140)
+
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_QDataListView()
         self.subwin_abq.setupUi(widget)
@@ -137,7 +139,8 @@ class DockLogSubWindow(QtGui.QDockWidget):
 class QMdiPlotSubWindow(QtGui.QMdiSubWindow):
     def __init__(self, parent, plt):
         super(QMdiPlotSubWindow,self).__init__(parent)
-        self.setWindowTitle( 'Untitled3' )
+        self.setWindowTitle( 'Untitled' )
+        self.setWindowIcon(QtGui.QIcon('LayoutCreator.ico'))
         self.resize(500, 300)
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_pyQTGraph()
@@ -187,6 +190,7 @@ class QMdiCursorSubWindow(QtGui.QMdiSubWindow):
     def __init__(self, parent, data):
         super(QMdiCursorSubWindow,self).__init__(parent)
         self.setWindowTitle( 'Cursor' )
+        self.setWindowIcon(QtGui.QIcon('LayoutCreator.ico'))
         self.resize(500, 400)
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_QCursorWindow()
@@ -195,6 +199,7 @@ class QMdiCursorSubWindow(QtGui.QMdiSubWindow):
         widget.setParent(self)
         parent.addSubWindow(self)
         self.setWidget(widget)
+        self.adjustSize()
         self.show()
         
     def valueChangedSlot(self, key, value):

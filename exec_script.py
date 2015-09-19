@@ -5,7 +5,6 @@ from __future__ import division
 from math import *
 from ngspice.syntax import *
 from ngspice.simulator import *
-#from syntax import Bench
 
 __env__ = {k:v for k,v in globals().iteritems()}
 

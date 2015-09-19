@@ -34,9 +34,13 @@ class DomModel(QtGui.QStandardItemModel):
         
         
         QStandardItem = QtGui.QStandardItem
-        
+
+        font_root = QtGui.QFont()
+        font_root.setItalic(True)
+       
         # model
-        row = QStandardItem('model')
+        row = QStandardItem('Model')
+        row.setFont(font_root)
         row.setEditable(False)
         for key, value in data['model'].iteritems():
             item = QStandardItem(key)
@@ -45,11 +49,13 @@ class DomModel(QtGui.QStandardItemModel):
         self.appendRow(row)
         
         # bench
-        row = QStandardItem('bench')
+        row = QStandardItem('Bench')
+        row.setFont(font_root)
         row.setEditable(False)
         for key, value in data['bench'].iteritems():
             item = QStandardItem(key)
             item.setCheckable(True)
+            item.setCheckState(QtCore.Qt.Checked)
             if key in selected:
                 item.setCheckState(2)
             item.setEditable(False)
@@ -79,7 +85,8 @@ class DomModel(QtGui.QStandardItemModel):
         self.appendRow(row)
         
         # plot
-        row = QStandardItem('plot')
+        row = QStandardItem('Plot')
+        row.setFont(font_root)
         row.setEditable(False)
         for key, value in data['plot'].iteritems():
             item = QStandardItem(key)
@@ -89,7 +96,8 @@ class DomModel(QtGui.QStandardItemModel):
         self.appendRow(row)
 
         # param
-        row = QStandardItem('param')
+        row = QStandardItem('Param')
+        row.setFont(font_root)
         row.setEditable(False)
         for i, value in enumerate(data['parameter']):
             key = value.filename()
@@ -98,6 +106,12 @@ class DomModel(QtGui.QStandardItemModel):
             item.setEditable(False)
             row.appendRow(item)
         self.appendRow(row)
+
+        # Optim
+        row = QStandardItem('Optim')
+        row.setFont(font_root)
+        row.setEditable(False)
+        self.appendRow(row) 
 
     def getPlotIndexes(self):
         index = Index(self.index(2, 0), self)
@@ -119,6 +133,10 @@ class DataTree(QtGui.QTreeView):
 
     def __init__(self, parent=None, model=DomModel):
         super(DataTree, self).__init__(parent)
+
+        self.setAnimated(True)
+
+
         self.model = model()
         self.setModel(self.model)
         self.doubleClicked.connect(self.on_treeview_doubleClicked)

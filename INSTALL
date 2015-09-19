@@ -1,0 +1,14 @@
+
+The Tool Requires:
+
+* Python 2.7
+* PyQT4
+* NGspice or Spectre Spice simulators
+* pyqtgraph, version>0.9.10
+* numpy
+* Python Utils tools available at https://github.com/raphaelvalentin/Utils
+
+
+To run the tool: 
+
+python main.py

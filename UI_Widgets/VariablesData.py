@@ -1,125 +1,62 @@
-__all__ = ['__globals__', 'Model', 'Bench', 'Plot', 'Param']
+__all__ = ['__globals__', 'setenv']
 
 # ordered dictionnary
-class Dict(object):
-    def __init__(self):
-        self._keys = []
-        self.values = []
-    def __getitem__(self, key):
-        try:
-            indx = self._keys.index(key)
-            return self.values[indx]
-        except ValueError:
-            raise KeyError(key)
-    def __setitem__(self, key, value):
-        try:
-            indx = self._keys.index(key)
-            self._keys[indx] = key
-            self.values[indx] = value
-        except ValueError:
-            self._keys.append(key)
-            self.values.append(value)
-    def iteritems(self):
-        for name, function in zip(self._keys, self.values):
-            yield name, function
-    def keys(self):
-        return self._keys
-    def __delitem__(self, key):
-         try:
-            indx = self._keys.index(key)
-            del self._keys[indx]
-            del self.values[indx]
-         except ValueError:
-            raise KeyError(key)
-    def __str__(self):
-        s = []
-        for name, function in zip(self._keys, self.values):
-            s.append( "%r:%r, "%(name, function))
-        return "".join(s)
+from collections import OrderedDict
 
-# ordered dictionnary
-class Dict(object):
-    def __init__(self):
-        self._keys = []
-        self._values = []
-    def __len__(self):
-        return len(self._keys)
-    def __getitem__(self, key):
-        try:
-            indx = self._keys.index(key)
-            return self._values[indx]
-        except ValueError:
-            raise KeyError(key)
-    def __setitem__(self, key, value):
-        try:
-            indx = self._keys.index(key)
-            self._keys[indx] = key
-            self._values[indx] = value
-        except ValueError:
-            self._keys.append(key)
-            self._values.append(value)
-    def iteritems(self):
-        for name, value in zip(self._keys, self._values):
-            yield name, value
-    def items(self):
-        return self._keys, self._values
-    def keys(self):
-        return self._keys
-    def values(self):
-        return self._values
-    def __delitem__(self, key):
-         try:
-            indx = self._keys.index(key)
-            del self._keys[indx]
-            del self._values[indx]
-         except ValueError:
-            raise KeyError(key)
-    def __str__(self):
-        s = []
-        for name, value in zip(self._keys, self._values):
-            s.append( "%r:%r, "%(name, value))
-        return "".join(s)
-        
 
 # GLOBAL
-__globals__ = { 'model' : Dict(), 
-                'bench' : Dict(),
-                'plot'  : Dict(),
-                'param' : Dict(),
+__globals__ = { 'model' : OrderedDict(), 
+                'bench' : OrderedDict(),
+                'plot'  : OrderedDict(),
+                'param' : OrderedDict(),
               }
 
-class Bench(object):
-    def __init__(self, name):
-        self.name = name
-    def __call__(self, item):
-        __globals__['bench'][self.name] = item
 
-class Plot(object):
-    def __init__(self, name):
-        self.name = name
-    def __call__(self, item):
-        __globals__['plot'][self.name] = item
 
-def Model(name):
+def setenv(type=None, name=None):
+    assert isinstance(type, str), 'type is not a string'
+    assert isinstance(name, str), 'name is not a string'
+    if type.lower() == 'model':
+        __type__ = 'model'
+    elif type.lower() == 'plot':
+        __type__ = 'plot'
+    elif type.lower() == 'bench':
+        __type__ = 'bench'
+    else:
+        raise Exception('type is not a plot or a bench or a model')        
     def call(item):
         def wrap(*args, **kwargs):
             return item(*args, **kwargs)
-        __globals__['model'][name] = wrap
+        __globals__[__type__][name] = wrap
         return wrap
     return call
 
-def Bench(name):
+
+"""
+__globals__ = OrderedDict()
+
+def setenv(type=None, name=None):
+    assert isinstance(type, str), 'type is not a string'
+    assert isinstance(name, str), 'name is not a string'
+    if type.lower() == 'model':
+        __type__ = 'model'
+    elif type.lower() == 'plot':
+        __type__ = 'plot'
+    elif type.lower() == 'bench':
+        __type__ = 'bench'
+    else:
+        raise Exception('type is not a plot or a bench or a model')        
     def call(item):
         def wrap(*args, **kwargs):
             return item(*args, **kwargs)
-        __globals__['bench'][name] = wrap
-        return wrap
+        __globals__[name] = (__type__, wrap)
     return call
 
-def Plot(name):
-    def call(item):
-        def wrap(*args, **kwargs):
-            return item(*args, **kwargs)
-        __globals__['plot'][name] = wrap
-    return call
+"""
+
+
+
+
+
+
 

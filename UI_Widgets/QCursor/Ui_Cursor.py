@@ -147,6 +147,7 @@ class Ui_Cursor(QtCore.QObject):
         
         self.precisionSlider = 10000.0
         self.horizontalSlider.setRange(0, self.precisionSlider)
+        self.horizontalSlider.setMinimumWidth(200)
         self.horizontalSlider.setObjectName(_fromUtf8("horizontalSlider"))
         self.horizontalLayout.addWidget(self.horizontalSlider)
 

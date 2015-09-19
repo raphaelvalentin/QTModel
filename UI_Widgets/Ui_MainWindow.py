@@ -62,10 +62,17 @@ from UI_Widgets import VariablesData
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+    def setupUi(self, MainWindow, **kwargs):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(800, 600)
         MainWindow.setSizeIncrement(QtCore.QSize(10, 10))
+
+
+        MainWindow.setCorner(QtCore.Qt.TopLeftCorner, QtCore.Qt.LeftDockWidgetArea)
+        MainWindow.setCorner(QtCore.Qt.TopRightCorner, QtCore.Qt.RightDockWidgetArea)
+        MainWindow.setCorner(QtCore.Qt.BottomLeftCorner, QtCore.Qt.LeftDockWidgetArea)
+        MainWindow.setCorner(QtCore.Qt.BottomRightCorner, QtCore.Qt.RightDockWidgetArea)
+
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -92,15 +99,34 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
         self.menubarUi(MainWindow)
         
+        self.toolbarUi(MainWindow, toolbar='File')
+        self.toolbarUi(MainWindow, toolbar='Action')
         
         self.createDockWindows(MainWindow)
 
-        MainWindow.setWindowTitle("QTModel")
+        version = kwargs.get('version', None)
+        if version:
+            MainWindow.setWindowTitle("QTModel %s"%version)
+        else:
+            MainWindow.setWindowTitle("QTModel")
 
 
         self.retranslateUi(MainWindow)
 
-        self.current_path = './Projects'        
+        # manage project path
+        from os.path import expanduser
+        project_path = os.path.join(expanduser("~"),'.qtmodel')
+        if not os.path.exists(project_path):
+            os.mkdir(project_path)
+
+
+        #self.current_path = './Projects'        
+        self.current_path = project_path
+        self.project_path = project_path      
+
+            
+
+
 
 
         QtCore.QObject.connect(self.mdiArea, QtCore.SIGNAL('subWindowActivated(QMdiSubWindow*)'), lambda subwindow: self.changedFocusSlot(MainWindow, subwindow))
@@ -116,30 +142,35 @@ class Ui_MainWindow(object):
 
     # create actions
     def createActions(self, MainWindow):
-        self.newScriptAct = QtGui.QAction("&Script", MainWindow,
+        icon = QtGui.QIcon.fromTheme("empty")
+        self.newScriptAct = QtGui.QAction(icon, "&Script", MainWindow,
                 statusTip="Create a new script file", 
                 triggered=lambda: self.newScript(MainWindow))
                 
         self.newParameterBoxAct = QtGui.QAction("&Parameter Box", MainWindow,
                 statusTip="Create a new parameter box", 
                 triggered=lambda: self.newParameterBox(MainWindow))
-                
-        self.openAct = QtGui.QAction("&Open...", MainWindow,
+
+        icon = QtGui.QIcon.fromTheme("document-open")
+        self.openAct = QtGui.QAction(icon, "&Open...", MainWindow,
                 shortcut=QtGui.QKeySequence.Open,
                 statusTip="Open an existing file", 
                 triggered=lambda: self.loadFile(MainWindow))
 
-        self.saveAct = QtGui.QAction("&Save", MainWindow,
+        icon = QtGui.QIcon.fromTheme("document-save")
+        self.saveAct = QtGui.QAction(icon, "&Save", MainWindow,
                 shortcut=QtGui.QKeySequence.Save,
                 statusTip="Save the document to disk", 
                 triggered=lambda: self.saveFile(MainWindow))
 
-        self.saveAsAct = QtGui.QAction("Save &As...", MainWindow,
+        icon = QtGui.QIcon.fromTheme("document-save-as")
+        self.saveAsAct = QtGui.QAction(icon, "Save &As...", MainWindow,
                 shortcut=QtGui.QKeySequence.SaveAs,
                 statusTip="Save the document under a new name",
                 triggered=lambda: self.saveAsFile(MainWindow))
 
-        self.exitAct = QtGui.QAction("E&xit", MainWindow, 
+        icon = QtGui.QIcon.fromTheme("gtk-close")
+        self.exitAct = QtGui.QAction(icon, "E&xit", MainWindow, 
                 shortcut="Ctrl+Q",
                 statusTip="Exit the application",
                 triggered=lambda: self.exitApp(MainWindow))
@@ -162,7 +193,8 @@ class Ui_MainWindow(object):
                 statusTip="Show the About box",
                 triggered=lambda: self.aboutMessageBox(MainWindow))
 
-        self.AttachToProjectAct = QtGui.QAction("Attach to Project", MainWindow,
+        icon = QtGui.QIcon.fromTheme("mail-attachment")
+        self.AttachToProjectAct = QtGui.QAction(icon, "Attach to Project", MainWindow,
                 statusTip="Attach the file to the project",
                 triggered=lambda: self.attachToProject())
 
@@ -174,11 +206,13 @@ class Ui_MainWindow(object):
                 statusTip="Delete rows of the table",
                 triggered=lambda: self.mdiArea.activeSubWindow().delRow())
 
-        self.ExecuteBenchAct = QtGui.QAction("Execute", MainWindow,
+        icon = QtGui.QIcon.fromTheme("gtk-execute")
+        self.ExecuteBenchAct = QtGui.QAction(icon, "Execute", MainWindow,
                 statusTip="Execute the bench",
                 triggered=lambda: self.executeBench(self.DockDataTreeSubWindow.getSelectedRow()))
 
-        self.TracePlotAct = QtGui.QAction("Trace Plot", MainWindow,
+        icon = QtGui.QIcon("UI_Widgets/StyleSheet/graph-256.png")
+        self.TracePlotAct = QtGui.QAction(icon, "Trace Plot", MainWindow,
                 statusTip="Trace the plot",
                 triggered=lambda: self.tracePlot(self.DockDataTreeSubWindow.getSelectedRow()))
 
@@ -195,7 +229,23 @@ class Ui_MainWindow(object):
                 triggered=lambda: self.delVariableData(self.DockDataTreeSubWindow.getSelectedRow()))
 
 
+    def toolbarUi(self, MainWindow, toolbar='File'):
+        if toolbar=='File':
+            self.toolbar_document = QtGui.QToolBar()
+            self.toolbar_document.addAction(self.newScriptAct)
+            self.toolbar_document.addAction(self.openAct)
+            self.toolbar_document.addAction(self.saveAct)
+            self.toolbar_document.addAction(self.saveAsAct)
+            self.toolbar_document.addAction(self.exitAct)
+            MainWindow.addToolBar(self.toolbar_document)
+        if toolbar=='Action':
+            self.toolbar_action = QtGui.QToolBar()
+            self.toolbar_action.addAction(self.AttachToProjectAct)
+            self.toolbar_action.addAction(self.ExecuteBenchAct)
+            self.toolbar_action.addAction(self.TracePlotAct)
+            MainWindow.addToolBar(self.toolbar_action)
 
+       
 
 
     # define the initial menubar
@@ -234,9 +284,11 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
         
         # set second-level menu bar
+        icon = QtGui.QIcon.fromTheme("document-new")
         self.menuFileNew = QtGui.QMenu(self.menubar)
         self.menuFileNew.setObjectName(_fromUtf8("menuFile"))
         self.menuFileNew.setTitle(_translate("MainWindow", "New", None)) 
+        self.menuFileNew.setIcon(icon)
         self.menuFile.addAction(self.menuFileNew.menuAction())
         
         self.menuFileNew.addAction( self.newScriptAct )
@@ -331,10 +383,10 @@ class Ui_MainWindow(object):
             interpy.finished.connect(lambda:finished(self, interpy, index))
             interpy.start()
 
-        if index.parent().text() == "bench":
+        if index.parent().text() == "Bench":
             pseudofunction(self, index)
 
-        elif index.text() == "bench":
+        elif index.text() == "Bench":
             for child in index.childs():
                 if child.ischeck():
                     pseudofunction(self, child)
@@ -395,8 +447,10 @@ plt['%s']['items'] = []
             interpy.start()
 
         
-        if index.parent().text()  == "plot":
+        if index.parent().text()  == "Plot":
             pseudofunction(self, index)
+        else:
+            self.statusbar.showMessage( 'Plot Opening Failed because no plot is selected...')
             
     def autoexecute(self):
         autoexecute = self.AutoExecuteAct.isChecked()
@@ -417,7 +471,7 @@ plt['%s']['items'] = []
         
     def newCursorBoxWindow(self, MainWindow):
         index = self.DockDataTreeSubWindow.getSelectedRow()
-        if index.parent().text() == 'param':
+        if index.parent().text() == 'Param':
             for subwindow in __data__['parameter']:
                 if os.path.split(subwindow.filename())[-1] == index.text():
                     data = subwindow.data()
@@ -428,7 +482,7 @@ plt['%s']['items'] = []
     def loadFile(self, MainWindow):
 
         filename = QtGui.QFileDialog.getOpenFileName(None,
-            'Open a Script/Data File', QtCore.QDir.currentPath(), "Python Files & Parameter Files (*.py *.dat);;")
+            'Open a Script/Data File', self.project_path, "Python Files & Parameter Files (*.py *.dat);;")
 
         if filename is None: 
             self.statusbar.showMessage( 'No file has been selected...')
@@ -508,7 +562,7 @@ plt['%s']['items'] = []
                 raise Exception( 'No active Window is selected to save...' )
 
             filename = QtGui.QFileDialog.getSaveFileName(None,
-                'Save a Script/Data File', QtCore.QDir.currentPath(), "Python Files & Parameter Files (*.py *.dat);;")
+                'Save a Script/Data File', self.project_path, "Python Files & Parameter Files (*.py *.dat);;")
 
             if not filename:
                 Exception( "Failed to save to a file...")
@@ -571,16 +625,16 @@ plt['%s']['items'] = []
         #for child in index.childs():
         #    print child.text(), child.ischeck()
     
-        if index.text() in ('bench',) or index.parent().text() in ('bench',):
+        if index.text() in ('Bench',) or index.parent().text() in ('Bench',):
             if not self.ExecuteBenchAct in self.menuAction.actions():
                 self.menuAction.addAction( self.ExecuteBenchAct )
                 self.menuAction.addAction( self.AutoExecuteAct )
-        if index.text() in ('param',) or index.parent().text() in ('param',):
+        if index.text() in ('Param',) or index.parent().text() in ('Param',):
                 self.menuAction.addAction( self.OpenCursorBoxAct )
-        if index.text() in ('plot',) or index.parent().text() in ('plot',):
+        if index.text() in ('Plot',) or index.parent().text() in ('Plot',):
             if not self.TracePlotAct in self.menuAction.actions():
                 self.menuAction.addAction( self.TracePlotAct )
-        if index.text() in ('model',) or index.parent().text() in ('model',):
+        if index.text() in ('Model',) or index.parent().text() in ('Model',):
             if self.ExecuteBenchAct in self.menuAction.actions():
                 actions = list(self.menuAction.actions())
                 self.menuAction.clear()
@@ -600,7 +654,8 @@ plt['%s']['items'] = []
         if isinstance(subwindow, QMdiScriptSubWindow):
             script = str(subwindow.text())
             # run the script and extract the add-on data
-            environ = { 'Model':VariablesData.Model, 'Bench':VariablesData.Bench, 'Plot':VariablesData.Plot }
+#            environ = { 'Model':VariablesData.Model, 'Bench':VariablesData.Bench, 'Plot':VariablesData.Plot, 'setenv':VariablesData.setenv }
+            environ = { 'setenv':VariablesData.setenv }
             obj1 = Interpy(locals=environ)
             obj1.runsource(script, filename='<script>', symbol="exec")
             if obj1.stderr.strip()<>"":

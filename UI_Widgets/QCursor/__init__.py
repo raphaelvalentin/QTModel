@@ -16,7 +16,7 @@ class Ui_QCursorWindow(QtCore.QObject):
         self.verticalLayout.setObjectName("verticalLayout")
         if len(data):
             self.setupCursor(Form, data)        
-            spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+            spacerItem = QtGui.QSpacerItem(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
             self.verticalLayout.addItem(spacerItem)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
