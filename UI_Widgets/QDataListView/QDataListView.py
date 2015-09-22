@@ -99,7 +99,7 @@ class DomModel(QtGui.QStandardItemModel):
         row = QStandardItem('Param')
         row.setFont(font_root)
         row.setEditable(False)
-        for i, value in enumerate(data['parameter']):
+        for i, value in enumerate(data['param'].values()):
             key = value.filename()
             key = os.path.split(key)[1]
             item = QStandardItem(key)

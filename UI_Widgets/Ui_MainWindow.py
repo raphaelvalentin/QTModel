@@ -57,7 +57,7 @@ from exec_script import *
 __data__ = { 'model' : {},
              'bench' : {},
              'plot'  : {},
-             'parameter' : [],
+             'param' : {},
             }
 from UI_Widgets import VariablesData
 
@@ -101,8 +101,6 @@ class Ui_MainWindow(object):
         self.menubarUi(MainWindow)
         
         self.toolbarUi(MainWindow)
-        #self.toolbarUi(MainWindow, toolbar='Action')
-        
         self.createDockWindows(MainWindow)
 
         version = kwargs.get('version', None)
@@ -110,7 +108,6 @@ class Ui_MainWindow(object):
             MainWindow.setWindowTitle("QTModel %s"%version)
         else:
             MainWindow.setWindowTitle("QTModel")
-
 
         self.retranslateUi(MainWindow)
 
@@ -125,11 +122,9 @@ class Ui_MainWindow(object):
         self.current_path = project_path
         self.project_path = project_path      
 
+        # override the closeEvent 
+        MainWindow.closeEvent = lambda event: self.closeEvent(MainWindow)
             
-
-
-
-
         QtCore.QObject.connect(self.mdiArea, QtCore.SIGNAL('subWindowActivated(QMdiSubWindow*)'), lambda subwindow: self.changedFocusSlot(MainWindow, subwindow))
 
 
@@ -174,7 +169,7 @@ class Ui_MainWindow(object):
         self.exitAct = QtGui.QAction(icon, "E&xit", MainWindow, 
                 shortcut="Ctrl+Q",
                 statusTip="Exit the application",
-                triggered=lambda: self.exitApp(MainWindow))
+                triggered=lambda: self.closeEvent(MainWindow))
 
         self.tileAct = QtGui.QAction("&Tile", MainWindow, 
                 shortcut="Ctrl+T",
@@ -197,7 +192,7 @@ class Ui_MainWindow(object):
         icon = QtGui.QIcon.fromTheme("mail-attachment")
         self.AttachToProjectAct = QtGui.QAction(icon, "Attach to Project", MainWindow,
                 statusTip="Attach the file to the project",
-                triggered=lambda: self.attachToProject())
+                triggered=lambda: self.attachToProject(MainWindow))
 
         self.AddRowAct = QtGui.QAction("Add Row", MainWindow,
                 statusTip="Add a row of the table",
@@ -232,21 +227,6 @@ class Ui_MainWindow(object):
 
 
     def toolbarUi(self, MainWindow):
-        """if toolbar=='File':
-            self.toolbar_document = QtGui.QToolBar()
-            self.toolbar_document.addAction(self.newScriptAct)
-            self.toolbar_document.addAction(self.openAct)
-            self.toolbar_document.addAction(self.saveAct)
-            self.toolbar_document.addAction(self.saveAsAct)
-            self.toolbar_document.addAction(self.exitAct)
-            MainWindow.addToolBar(self.toolbar_document)
-        if toolbar=='Action':
-            self.toolbar_action = QtGui.QToolBar()
-            self.toolbar_action.addAction(self.AttachToProjectAct)
-            self.toolbar_action.addAction(self.ExecuteBenchAct)
-            self.toolbar_action.addAction(self.TracePlotAct)
-            MainWindow.addToolBar(self.toolbar_action)"""
-
         self.toolbar_document = QtGui.QToolBar()
         self.toolbar_document.addAction(self.newScriptAct)
         self.toolbar_document.addAction(self.openAct)
@@ -258,7 +238,6 @@ class Ui_MainWindow(object):
         self.toolbar_action = QtGui.QToolBar()
         self.toolbar_action.addAction(self.AttachToProjectAct)
         self.toolbar_action.addAction(self.ExecuteBenchAct)
-        #self.toolbar_action.addAction(self.AutoExecuteAct)
         self.toolbar_action.addAction(self.TracePlotAct)
         self.toolbar_action.addAction(self.OpenCursorBoxAct)
         MainWindow.addToolBar(self.toolbar_action)
@@ -354,11 +333,10 @@ class Ui_MainWindow(object):
         self.menuHelp.addAction( self.aboutQtAct )
 
 
-    def exitApp(self, MainWindow):
+    def closeEvent(self, MainWindow):
         QtGui.qApp.closeAllWindows()
         QtGui.QApplication.quit()
         raise SystemExit()
-
 
     #---------------------------------------------------------------------------
     def createDockWindows(self, MainWindow):
@@ -387,6 +365,7 @@ class Ui_MainWindow(object):
     def delVariableData(self, index):
         child = index.text()
         parent = index.parent().text()
+	parent = parent.lower()
         if parent in VariablesData.__globals__.keys():
             if child in VariablesData.__globals__[parent].keys():
                 del VariablesData.__globals__[parent][child]
@@ -406,7 +385,7 @@ class Ui_MainWindow(object):
             environ[key] = value
             interpy = QInterpy(locals=environ)
             instances = {}
-            for subwindow in __data__['parameter']:
+            for subwindow in VariablesData.__globals__['param'].values():
                 instances.update( dict(subwindow.iteritems()) )
             cmd = ";".join([ 'kwargs = %s'        % str(instances), 
                              'obj = %s'           % key,
@@ -513,11 +492,14 @@ except:
 
     def newScript(self, MainWindow):
         QMdiScriptSubWindow(self.mdiArea)
+
+    def newParameterBox(self, MainWindow):
+        QMdiParameterBoxSubWindow(self.mdiArea)
         
     def newCursorBoxWindow(self, MainWindow):
         index = self.DockDataTreeSubWindow.getSelectedRow()
         if index.parent().text() == 'Param':
-            for subwindow in __data__['parameter']:
+            for subwindow in __data__['param']:
                 if os.path.split(subwindow.filename())[-1] == index.text():
                     data = subwindow.data()
                     cursorBox = QMdiCursorSubWindow(self.mdiArea, data)
@@ -679,7 +661,7 @@ except:
 
 
 
-    def attachToProject(self):
+    def attachToProject(self, MainWindow):
 
         subwindow = self.mdiArea.activeSubWindow()
 
@@ -690,7 +672,9 @@ except:
             obj1 = Interpy(locals=environ)
             obj1.runsource(script, filename='<script>', symbol="exec")
             if obj1.stderr.strip()<>"":
-                print obj1.stderr.strip()
+                msgerror = obj1.stderr.strip()
+                self.warningMessage(MainWindow, message='The file failed to attach to the Project. \n %s'%msgerror)
+		return
             if obj1.stdout.strip()<>"":
                 print obj1.stdout.strip()
             __data__['model'] = VariablesData.__globals__['model']
@@ -703,7 +687,7 @@ except:
         elif isinstance(subwindow, QMdiParameterBoxSubWindow):
             key = os.path.split(subwindow.filename())[-1]
             VariablesData.__globals__['param'][key] = subwindow
-            __data__['parameter'] = VariablesData.__globals__['param'].values()
+            __data__['param'] = VariablesData.__globals__['param']
             self.DockDataTreeSubWindow.setData(__data__)
             subwindow.itemChanged.connect( self.autoexecute  )     
             self.statusbar.showMessage( 'Parameter File attached successfully into the data hierarchy.')
