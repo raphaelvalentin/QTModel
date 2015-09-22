@@ -55,7 +55,7 @@ class DomModel(QtGui.QStandardItemModel):
         for key, value in data['bench'].iteritems():
             item = QStandardItem(key)
             item.setCheckable(True)
-            item.setCheckState(QtCore.Qt.Checked)
+            #item.setCheckState(QtCore.Qt.Checked)
             if key in selected:
                 item.setCheckState(2)
             item.setEditable(False)
