@@ -22,11 +22,11 @@ class myinductor(Netlist):
 
         # Parallel CAP
         subckt1.append( Capacitor(name='cp1', nodes=(PORT1, '18'), c=cp) )
-        subckt1.append( Resistor(name='rpatt1', nodes=('18', 'SUB'), r=rsub) )
+        subckt1.append( Resistor(name='rsub1', nodes=('18', 'SUB'), r=rsub) )
         subckt1.append( Capacitor(name='cp2', nodes=('3', '19'), c=cp) )
-        subckt1.append( Resistor(name='rpatt2', nodes=('19', 'SUB'), r=rsub) )
+        subckt1.append( Resistor(name='rsub2', nodes=('19', 'SUB'), r=rsub) )
         subckt1.append( Capacitor(name='cp3', nodes=(PORT2, '20'), c=cp) )
-        subckt1.append( Resistor(name='rpatt3', nodes=('20', 'SUB'), r=rsub ) )
+        subckt1.append( Resistor(name='rsub3', nodes=('20', 'SUB'), r=rsub ) )
 
         self.append( Fracpole(name='fracpole1', order=4, symmetry=False, fac=4e9) )
         self.append( Subckt(name=name, nodes=(PORT1, PORT2, SUB), childs=subckt1) )

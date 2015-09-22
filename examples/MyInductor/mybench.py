@@ -1,6 +1,6 @@
 ## Benches
 
-from lib.inductor.rf2 import sp as Sp
+from lib.inductor.rf import sp as Sp
 from syntax import *
 from functions.science import linspace
 
@@ -15,17 +15,13 @@ class sp1():
         ldc = parameters.get('ldc', 1e-9)
         k1 = parameters.get('k1', 0.9)
         rsub = parameters.get('rsub', 1)
-        rpattern = parameters.get('rpattern', 1)
-        cp2 = parameters.get('cp2', 1.0e-15)
-        rsubp2 = parameters.get('rsubp2', 65)
 
         freq = linspace(0.1e9, 15e9, 101)
         
         lib = myinductor(name='myinductor', rs=rs, ls=ls, cp=cp, cs=cs, rac=rac, ldc=ldc, 
-                                            k1=k1, rpattern=rpattern, rsub=rsub, cp2=cp2, 
-                                            rsubp2=rsubp2)
+                                            k1=k1, rsub=rsub)
         dev = Device(model='myinductor', nodes=('plus', 'minus', '0'))
-        cir1 = Sp(library=lib, device=dev, freq=freq, withline=True)
+        cir1 = Sp(library=lib, device=dev, freq=freq)
         cir1.simulate(verbose=True)
         y11, y12, y21, y22 = cir1.Y()
 
