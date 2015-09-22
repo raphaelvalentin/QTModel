@@ -499,7 +499,7 @@ except:
     def newCursorBoxWindow(self, MainWindow):
         index = self.DockDataTreeSubWindow.getSelectedRow()
         if index.parent().text() == 'Param':
-            for subwindow in __data__['param']:
+            for subwindow in __data__['param'].values():
                 if os.path.split(subwindow.filename())[-1] == index.text():
                     data = subwindow.data()
                     cursorBox = QMdiCursorSubWindow(self.mdiArea, data)
