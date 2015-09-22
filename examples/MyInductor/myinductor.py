@@ -1,37 +1,33 @@
-# -*- type: model -*-
+### first tentative model
 
 @setenv(type='model', name='myinductor')
 class myinductor(Netlist):
-    def __init__(self, name='myinductor', ls=1e-9, rs=1.0, cp=100e-15, cs=20e-15, rsub=100):
+    def __init__(self, name='myinductor', ls=1e-9, rs=1.0, cp=100e-15, cs=20e-15, ldc=1e-9, rac=2, k1=0.1, rsub=5):
+
+        PORT1 = 'P1'
+        PORT2 = 'P2'
+        SUB = 'SUB'
+
+        # netlist
         subckt1 = []
-        subckt1.append( Inductor(name='ls1', nodes=('1', '2'), l=0.5*ls) )
-        subckt1.append( Resistor(name='rs1', nodes=('2', '3'), r=0.5*rs) )
-        subckt1.append( Capacitor(name='cs1', nodes=('1', '3'), c=2*cs) )
+        subckt1.append( Inductor(name='ls1', nodes=(PORT1, '2'), l=ls) )
+        subckt1.append( Device(name='xfp1', model='fracpole1', nodes=('2', '3'), rdc=rs, ldc=ldc, rac=rac) )
+        subckt1.append( Device(name='xfp2', model='fracpole1', nodes=('3', '4'), rdc=rs, ldc=ldc, rac=rac) )
+        subckt1.append( Inductor(name='ls2', nodes=('4', PORT2), l=ls) )
 
-        subckt1.append( Resistor(name='rs2', nodes=('3', '4'), r=0.5*rs) )
-        subckt1.append( Inductor(name='ls2', nodes=('4', '5'), l=0.5*ls) )
-        subckt1.append( Capacitor(name='cs2', nodes=('3', '5'), c=2*cs) )
+        # Coupling
+        subckt1.append( MutualInductor(name='ml1', coupling=k1, ind1='ls1', ind2='ls2') )
+        subckt1.append( Capacitor(name='cs1', nodes=(PORT1, '3'), c=cs) )
+        subckt1.append( Capacitor(name='cs2', nodes=('3', PORT2), c=cs) )
 
-        subckt1.append( Capacitor(name='cp1', nodes=('1', '6'), c=0.25*cp) )
-        subckt1.append( Resistor(name='rsub1', nodes=('6', '0'), r=4*rsub) )
-        subckt1.append( Capacitor(name='cp2', nodes=('3', '7'), c=0.5*cp) )
-        subckt1.append( Resistor(name='rsub2', nodes=('7', '0'), r=2*rsub) )
-        subckt1.append( Capacitor(name='cp3', nodes=('5', '8'), c=0.25*cp) )
-        subckt1.append( Resistor(name='rsub3', nodes=('8', '0'), r=4*rsub) )
+        # Parallel CAP
+        subckt1.append( Capacitor(name='cp1', nodes=(PORT1, '18'), c=cp) )
+        subckt1.append( Resistor(name='rpatt1', nodes=('18', 'SUB'), r=rsub) )
+        subckt1.append( Capacitor(name='cp2', nodes=('3', '19'), c=cp) )
+        subckt1.append( Resistor(name='rpatt2', nodes=('19', 'SUB'), r=rsub) )
+        subckt1.append( Capacitor(name='cp3', nodes=(PORT2, '20'), c=cp) )
+        subckt1.append( Resistor(name='rpatt3', nodes=('20', 'SUB'), r=rsub ) )
 
-        self.append( Subckt(name=name, nodes=('1', '5'), childs=subckt1) )
+        self.append( Fracpole(name='fracpole1', order=4, symmetry=False, fac=4e9) )
+        self.append( Subckt(name=name, nodes=(PORT1, PORT2, SUB), childs=subckt1) )
 
-@setenv(type='model', name='myinductor2')
-class myinductor2(Netlist):
-    def __init__(self, name='myinductor', ls=1e-9, rs=1.0, cp=100e-15, cs=20e-15, rsub=100):
-        subckt1 = []
-        subckt1.append( Inductor(name='ls1', nodes=('1', '2'), l=ls) )
-        subckt1.append( Resistor(name='rs1', nodes=('2', '3'), r=rs) )
-        subckt1.append( Capacitor(name='cs1', nodes=('1', '3'), c=cs) )
-
-        subckt1.append( Capacitor(name='cp1', nodes=('1', '4'), c=0.5*cp) )
-        subckt1.append( Resistor(name='rsub1', nodes=('4', '0'), r=2*rsub) )
-        subckt1.append( Capacitor(name='cp2', nodes=('3', '5'), c=0.5*cp) )
-        subckt1.append( Resistor(name='rsub2', nodes=('5', '0'), r=2*rsub) )
-
-        self.append( Subckt(name=name, nodes=('1', '3'), childs=subckt1) )

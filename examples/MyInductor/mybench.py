@@ -1,47 +1,50 @@
-# -*- type: bench -*-
+## Benches
 
-from lib.inductor.rf import sp as Sp
+from lib.inductor.rf2 import sp as Sp
 from syntax import *
+from functions.science import linspace
 
-@setenv(type="bench", name='sp1')
+@setenv(type='bench', name='sp1')
 class sp1():
     def __init__(self, **parameters):
         ls = parameters.get('ls', 1e-9)
-        rs = parameters.get('rs', 2.0)
-        cp = parameters.get('cp', 50e-15)
-        cs = parameters.get('cs', 200e-15)
-        rsub = parameters.get('rsub', 1000.)
-        freq = linspace(0.1e9, 12e9, 101)
+        rs = parameters.get('rs', 1.0)
+        cp = parameters.get('cp', 150e-15)
+        cs = parameters.get('cs', 30e-15)
+        rac = parameters.get('rac', 1)
+        ldc = parameters.get('ldc', 1e-9)
+        k1 = parameters.get('k1', 0.9)
+        rsub = parameters.get('rsub', 1)
+        rpattern = parameters.get('rpattern', 1)
+        cp2 = parameters.get('cp2', 1.0e-15)
+        rsubp2 = parameters.get('rsubp2', 65)
+
+        freq = linspace(0.1e9, 15e9, 101)
         
-        lib = myinductor(name='myinductor', rs=rs, ls=ls, cp=cp, cs=cs, rsub=rsub)
-        dev = Device(model='myinductor', nodes=('plus', 'minus'))
-        cir1 = Sp(library=lib, device=dev, freq=freq)
+        lib = myinductor(name='myinductor', rs=rs, ls=ls, cp=cp, cs=cs, rac=rac, ldc=ldc, 
+                                            k1=k1, rpattern=rpattern, rsub=rsub, cp2=cp2, 
+                                            rsubp2=rsubp2)
+        dev = Device(model='myinductor', nodes=('plus', 'minus', '0'))
+        cir1 = Sp(library=lib, device=dev, freq=freq, withline=True)
         cir1.simulate(verbose=True)
+        y11, y12, y21, y22 = cir1.Y()
 
-        # output
         self.freq = freq
-        self.l11 = cir1.L11()
-        self.r11 = cir1.R11()
-        self.q11 = cir1.Q11()
+        self.l11 = (1.0/y11).imag/(2.0*pi*freq)
+        self.r11 = (1.0/y11).real
+        self.q11 = (1.0/y11).imag/(1/y11).real
 
-
-@setenv(type="bench", name='sp2')
+@setenv(type='bench', name='sp2')
 class sp2():
     def __init__(self, **parameters):
-        ls =  1e-9
-        rs =  2.0
-        cp =  50e-15
-        cs =  200e-15
-        rsub = 1000.
-        freq = linspace(0.1e9, 12e9, 101)
-        
-        lib = myinductor2(name='myinductor', rs=rs, ls=ls, cp=cp, cs=cs, rsub=rsub)
-        dev = Device(model='myinductor', nodes=('plus', 'minus'))
-        cir1 = Sp(library=lib, device=dev, freq=freq)
+        freq = linspace(0.1e9, 15e9, 101)
+        dev = Nport(nodes=('plus', '0', 'minus', '0'), file='./examples/MyInductor/mydata.s2p')
+        cir1 = Sp(device=dev, freq=freq)
         cir1.simulate(verbose=True)
+        y11, y12, y21, y22 = cir1.Y()
 
-        # output
         self.freq = freq
-        self.l11 = cir1.L11()
-        self.r11 = cir1.R11()
-        self.q11 = cir1.Q11()
+        self.l11 = (1.0/y11).imag/(2.0*pi*freq)
+        self.r11 = (1.0/y11).real
+        self.q11 = (1.0/y11).imag/(1/y11).real
+
