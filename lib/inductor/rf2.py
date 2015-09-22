@@ -1,6 +1,6 @@
 from ngspice import *
 from ngspice.syntax import Nport
-from libarray import *
+from numpy import *
 dB = lambda x: 20.*log10(abs(x))
 
 

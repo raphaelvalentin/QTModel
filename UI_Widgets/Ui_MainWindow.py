@@ -11,6 +11,7 @@ from QTextEdit import Ui_QTextEditWindow
 from QTParamBox import Ui_QTParamBox
 from Ui_SubWindow import *
 import sys, os
+from rawdata.table import table
 
 
 #from syntax import Bench
@@ -99,8 +100,8 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
         self.menubarUi(MainWindow)
         
-        self.toolbarUi(MainWindow, toolbar='File')
-        self.toolbarUi(MainWindow, toolbar='Action')
+        self.toolbarUi(MainWindow)
+        #self.toolbarUi(MainWindow, toolbar='Action')
         
         self.createDockWindows(MainWindow)
 
@@ -216,7 +217,8 @@ class Ui_MainWindow(object):
                 statusTip="Trace the plot",
                 triggered=lambda: self.tracePlot(self.DockDataTreeSubWindow.getSelectedRow()))
 
-        self.OpenCursorBoxAct = QtGui.QAction("Cursor Box", MainWindow,
+        icon = QtGui.QIcon("UI_Widgets/StyleSheet/preferences-desktop.svg")
+        self.OpenCursorBoxAct = QtGui.QAction(icon, "Cursor Box", MainWindow,
                 statusTip="Open the cursor box window",
                 triggered=lambda: self.newCursorBoxWindow(MainWindow))
 
@@ -229,8 +231,8 @@ class Ui_MainWindow(object):
                 triggered=lambda: self.delVariableData(self.DockDataTreeSubWindow.getSelectedRow()))
 
 
-    def toolbarUi(self, MainWindow, toolbar='File'):
-        if toolbar=='File':
+    def toolbarUi(self, MainWindow):
+        """if toolbar=='File':
             self.toolbar_document = QtGui.QToolBar()
             self.toolbar_document.addAction(self.newScriptAct)
             self.toolbar_document.addAction(self.openAct)
@@ -243,7 +245,34 @@ class Ui_MainWindow(object):
             self.toolbar_action.addAction(self.AttachToProjectAct)
             self.toolbar_action.addAction(self.ExecuteBenchAct)
             self.toolbar_action.addAction(self.TracePlotAct)
-            MainWindow.addToolBar(self.toolbar_action)
+            MainWindow.addToolBar(self.toolbar_action)"""
+
+        self.toolbar_document = QtGui.QToolBar()
+        self.toolbar_document.addAction(self.newScriptAct)
+        self.toolbar_document.addAction(self.openAct)
+        self.toolbar_document.addAction(self.saveAct)
+        self.toolbar_document.addAction(self.saveAsAct)
+        self.toolbar_document.addAction(self.exitAct)
+        MainWindow.addToolBar(self.toolbar_document)
+ 
+        self.toolbar_action = QtGui.QToolBar()
+        self.toolbar_action.addAction(self.AttachToProjectAct)
+        self.toolbar_action.addAction(self.ExecuteBenchAct)
+        #self.toolbar_action.addAction(self.AutoExecuteAct)
+        self.toolbar_action.addAction(self.TracePlotAct)
+        self.toolbar_action.addAction(self.OpenCursorBoxAct)
+        MainWindow.addToolBar(self.toolbar_action)
+ 
+        self.toolbar_table = QtGui.QToolBar()
+        self.toolbar_table.addAction(self.AddRowAct)
+        self.toolbar_table.addAction(self.DelRowAct)
+        MainWindow.addToolBar(self.toolbar_table)
+       
+    def warningMessage(self, MainWindow, message=''):    
+        QtGui.QMessageBox.warning(MainWindow,
+                            "Warning",
+                            message)
+
 
        
 
@@ -308,7 +337,19 @@ class Ui_MainWindow(object):
         self.menuAction.addAction( self.ExecuteBenchAct )
         self.menuAction.addAction( self.AutoExecuteAct )
         self.menuAction.addAction( self.DelVariableData )
-        
+        self.menuAction.addAction( self.OpenCursorBoxAct )
+        self.menuAction.addAction( self.TracePlotAct )   
+        self.menuAction.addAction( self.AddRowAct )
+        self.menuAction.addAction( self.DelRowAct )
+
+        self.ExecuteBenchAct.setEnabled(False)
+        self.OpenCursorBoxAct.setEnabled(False)
+        self.TracePlotAct.setEnabled(False)
+        self.AddRowAct.setEnabled(False)
+        self.DelRowAct.setEnabled(False)
+        self.DelVariableData.setEnabled(False)
+        self.AttachToProjectAct.setEnabled(False)
+
         self.menuHelp.addAction( self.aboutAct )
         self.menuHelp.addAction( self.aboutQtAct )
 
@@ -417,14 +458,18 @@ class Ui_MainWindow(object):
 
             interpy = QInterpy(locals=environ)
             src = """
-plt['currentname'] = '%s'
-plt['%s'] = {}
-plt['%s']['xlabel'] = ''
-plt['%s']['ylabel'] = ''
-plt['%s']['xunit'] = ''
-plt['%s']['yunit'] = ''
-plt['%s']['items'] = []
-%s()""" % (key, key, key, key, key, key, key, key)
+try:
+    plt['currentname'] = '%s'
+    plt['%s'] = {}
+    plt['%s']['xlabel'] = ''
+    plt['%s']['ylabel'] = ''
+    plt['%s']['xunit'] = ''
+    plt['%s']['yunit'] = ''
+    plt['%s']['items'] = []
+    %s()
+except:
+    print 'Warning: plot is empty'
+""" % (key, key, key, key, key, key, key, key)
             interpy.runsource( src, filename=key )
 
             def finished(self, interpy, index):
@@ -490,30 +535,20 @@ plt['%s']['items'] = []
 
         try:
             filename = str(filename)
-            with open(filename) as f:
 
-                if filename[-4:] == '.dat':
-                    table = []
-                    for line in f:
-                        line = line.strip()
-                        if line=='': 
-                            continue
-                        if line[0]=='#':
-                            continue
-                        row = line.split()
-                        if len(row) == 4:
-                            table.append([row[0], row[1], row[2], row[3]])
-                        else:
-                            raise Exception( 'Failed to load the file. The file cannot be read...' )
-                    subwindow = QMdiParameterBoxSubWindow(self.mdiArea)
-                    subwindow.setData(table)
-                    subwindow.setFilename(filename)
-
-                if filename[-3:] == '.py':
+            if filename[-4:] == '.dat':
+                subwindow = QMdiParameterBoxSubWindow(self.mdiArea)
+                subwindow.setFilename(filename)
+                d = table(filename).read()
+                for i, (key, values) in enumerate(d.iteritems()):
+                    subwindow.setRow(i, key, values)
+                
+            elif filename[-3:] == '.py':
+                with open(filename) as f:
                     subwindow = QMdiScriptSubWindow(self.mdiArea)
                     subwindow.setText(f.read())
                     subwindow.setFilename(filename)
-                  
+                   
         except IOError:
             self.statusbar.showMessage( 'Failed to load the file. The file cannot be read...')
             return False
@@ -525,7 +560,6 @@ plt['%s']['items'] = []
             self.statusbar.showMessage( "Successfully Loaded " + filename ) 
             return True
 
-
     def saveFile(self, MainWindow):
         subwindow = self.mdiArea.activeSubWindow()
         try:
@@ -533,15 +567,13 @@ plt['%s']['items'] = []
                 raise Exception( 'No active Window is selected to save...' )
             filename = subwindow.filename()
 
-            with open(filename, 'w') as g:
-
-                if isinstance(subwindow, QMdiParameterBoxSubWindow):
-                    data = subwindow.data()
-                    g.write("# -*- type: parameters -*-\n")
-                    for row in data:
-                        g.write("\t".join([str(e) for e in row]) + "\n")
-
-                elif isinstance(subwindow, QMdiScriptSubWindow):
+            if isinstance(subwindow, QMdiParameterBoxSubWindow):
+                t = table(filename)
+                for row in subwindow.data():
+                    t[row[0]] = row[1:]
+                t.write()
+            elif isinstance(subwindow, QMdiScriptSubWindow):
+                with open(filename, 'w') as g:
                     string = subwindow.text()
                     g.write(string)
 
@@ -569,15 +601,13 @@ plt['%s']['items'] = []
 
             subwindow.setFilename(filename)
 
-            with open(filename, 'w') as g:
-
-                if isinstance(subwindow, QMdiParameterBoxSubWindow):
-                    data = subwindow.data()
-                    g.write("# -*- type: parameters -*-\n")
-                    for row in data:
-                        g.write("\t".join([str(e) for e in row]) + "\n")
-
-                elif isinstance(subwindow, QMdiScriptSubWindow):
+            if isinstance(subwindow, QMdiParameterBoxSubWindow):
+                t = table(filename)
+                for row in subwindow.data():
+                    t[row[0]] = row[1:]
+                t.write()
+            elif isinstance(subwindow, QMdiScriptSubWindow):
+                with open(filename, 'w') as g:
                     string = subwindow.text()
                     g.write(string)
 
@@ -594,15 +624,22 @@ plt['%s']['items'] = []
 
 
     def changedFocusSlot(self, MainWindow, subwindow):
+        self.DelVariableData.setEnabled(False)
         if isinstance(subwindow, QMdiParameterBoxSubWindow):
-            self.menuAction.clear()
-            self.menuAction.addAction( self.AttachToProjectAct )
-            self.menuAction.addAction( self.AddRowAct )
-            self.menuAction.addAction( self.DelRowAct )
-            self.menuAction.addAction( self.OpenCursorBoxAct )
+            self.ExecuteBenchAct.setEnabled(False)
+            self.TracePlotAct.setEnabled(False)
+            self.OpenCursorBoxAct.setEnabled(False)
+            self.AttachToProjectAct.setEnabled(True)
+            self.AddRowAct.setEnabled(True)
+            self.DelRowAct.setEnabled(True)
         elif isinstance(subwindow, QMdiScriptSubWindow):
-            self.menuAction.clear()
-            self.menuAction.addAction( self.AttachToProjectAct )
+            self.AttachToProjectAct.setEnabled(True)
+            self.ExecuteBenchAct.setEnabled(False)
+            self.TracePlotAct.setEnabled(False)
+            self.OpenCursorBoxAct.setEnabled(False)
+            self.AddRowAct.setEnabled(False)
+            self.DelRowAct.setEnabled(False)
+
        
     #def changedCurrentTreeItem(self, item):
     #    if len(item)==1:
@@ -621,29 +658,24 @@ plt['%s']['items'] = []
     #                    self.menuAction.addAction( action )
        
     def changedCurrentTreeItem(self, index):
-        #print index.text(), index.ischeck()
-        #for child in index.childs():
-        #    print child.text(), child.ischeck()
-    
         if index.text() in ('Bench',) or index.parent().text() in ('Bench',):
-            if not self.ExecuteBenchAct in self.menuAction.actions():
-                self.menuAction.addAction( self.ExecuteBenchAct )
-                self.menuAction.addAction( self.AutoExecuteAct )
+            self.ExecuteBenchAct.setEnabled(True)
+            self.TracePlotAct.setEnabled(False)
+            self.OpenCursorBoxAct.setEnabled(False)
         if index.text() in ('Param',) or index.parent().text() in ('Param',):
-                self.menuAction.addAction( self.OpenCursorBoxAct )
+            self.OpenCursorBoxAct.setEnabled(True)
+            self.ExecuteBenchAct.setEnabled(False)
+            self.TracePlotAct.setEnabled(False)
         if index.text() in ('Plot',) or index.parent().text() in ('Plot',):
-            if not self.TracePlotAct in self.menuAction.actions():
-                self.menuAction.addAction( self.TracePlotAct )
+            self.TracePlotAct.setEnabled(True)
+            self.OpenCursorBoxAct.setEnabled(False)
+            self.ExecuteBenchAct.setEnabled(False)
         if index.text() in ('Model',) or index.parent().text() in ('Model',):
-            if self.ExecuteBenchAct in self.menuAction.actions():
-                actions = list(self.menuAction.actions())
-                self.menuAction.clear()
-                for action in actions:
-                    if not action is self.ExecuteBenchAct:
-                        self.menuAction.addAction( action )
-        self.menuAction.addAction( self.DelVariableData )
+            self.ExecuteBenchAct.setEnabled(False)
+            self.TracePlotAct.setEnabled(False)
+            self.OpenCursorBoxAct.setEnabled(False)
 
-
+        self.DelVariableData.setEnabled(True)
 
 
 
@@ -654,7 +686,6 @@ plt['%s']['items'] = []
         if isinstance(subwindow, QMdiScriptSubWindow):
             script = str(subwindow.text())
             # run the script and extract the add-on data
-#            environ = { 'Model':VariablesData.Model, 'Bench':VariablesData.Bench, 'Plot':VariablesData.Plot, 'setenv':VariablesData.setenv }
             environ = { 'setenv':VariablesData.setenv }
             obj1 = Interpy(locals=environ)
             obj1.runsource(script, filename='<script>', symbol="exec")

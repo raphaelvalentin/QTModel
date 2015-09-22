@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'ParamView.ui'
-#
-# Created: Tue Apr 28 17:35:20 2015
-#      by: PyQt4 UI code generator 4.10
-#
-# WARNING! All changes made in this file will be lost!
-
 from PyQt4 import QtCore, QtGui
-import time
+from time import time
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -53,14 +45,8 @@ class QTParamBox(QtCore.QObject):
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
         self.getRowCount = 0
-        self.t0 = time.time()
+        self.lastChanged = time()
 
-
-	
-	#print dir(self.tableWidget)
-	
-	#self.tableWidget.resizeColumnsToContents()
-	
 	hh = self.tableWidget.horizontalHeader()
         hh.setStretchLastSection(False)	
 	hh.setResizeMode(0, QtGui.QHeaderView.Stretch | QtGui.QHeaderView.Interactive)
@@ -68,8 +54,6 @@ class QTParamBox(QtCore.QObject):
 	hh.setResizeMode(2, QtGui.QHeaderView.Fixed)
 	hh.setResizeMode(3, QtGui.QHeaderView.Fixed)
 	self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-	
-	#self.tableWidget.horizontalHeader().setResize(3, 20)	
 	
 
     def retranslateUi(self, Form):
@@ -84,44 +68,19 @@ class QTParamBox(QtCore.QObject):
         item.setText(_translate("Form", "Max", None))
 
         def pseudofunction(*args):
-           if time.time() - self.t0 > 0.2:
+           # do not to emit when items changed to fast (turn-around for a bug, not good...)
+           if time() - self.lastChanged > 0.2: 
                item = self.tableWidget.item(*args)
 	       if str(item.text())=='':
 	           return
-	       t0 = time.time()
-               self.itemChanged.emit(args)
+	       self.lastChanged = time()
+           self.itemChanged.emit(args)
         self.tableWidget.cellChanged.connect(pseudofunction) 
 
-
-	
     def setData(self, table):
-        n = len(table)
-	self.getRowCount = n
-        self.tableWidget.setRowCount(n)
-
 	for i, row in enumerate(table):
- 	
-            for j, value in enumerate(row):
-                item = QtGui.QTableWidgetItem()
-	        #if j==0:
-                #    item.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                #                  QtCore.Qt.ItemIsEnabled)
-                #    item.setCheckState(QtCore.Qt.Checked)
-		    
-		self.tableWidget.setItem(i, j, item)
-                item = self.tableWidget.item(i, j)
-                item.setText(_translate("Form", str(value), None))
+            self.setRow(i, row[0], row[1:])
 		
-
-       
-
-
-    #def setValue(self, i, value):
-    #    item = QtGui.QTableWidgetItem()
-##	self.tableWidget.setItem(2, i, item)
- #       item = self.tableWidget.item(2, i)
- #       item.setText(_translate("Form", str(value), None))
-
     def setValue(self, key, value):
         for i in xrange(self.getRowCount):
 	    item = self.tableWidget.item(i, 0)
@@ -130,7 +89,25 @@ class QTParamBox(QtCore.QObject):
 	        self.tableWidget.setItem(i, 2, item)
 	        item = self.tableWidget.item(i, 2)
                 item.setText(_translate("Form", str(value), None))
-    
+                return
+
+    def setRow(self, i, key, values):
+
+        # add new row
+	self.getRowCount += 1
+        self.tableWidget.setRowCount(self.getRowCount)
+        # write key
+        item = QtGui.QTableWidgetItem()
+        self.tableWidget.setItem(i, 0, item)
+        item = self.tableWidget.item(i, 0)
+        item.setText(_translate("Form", str(key), None))
+        # write values
+        for j, value in enumerate(values):
+            item = QtGui.QTableWidgetItem()
+	    self.tableWidget.setItem(i, j+1, item)
+            item = self.tableWidget.item(i, j+1)
+            item.setText(_translate("Form", str(value), None))
+                
     def data(self):
         array2d = []
 	for i in xrange(self.getRowCount):
@@ -148,12 +125,26 @@ class QTParamBox(QtCore.QObject):
 	    array2d.append(row)
         return array2d
     
-    @property
     def headerData(self):
         row = []
 	for i in xrange(self.getRowCount):
             item = self.tableWidget.verticalHeaderItem(i)
             row.append( str(item.text()) )
 	return row
-	
 
+    def addEmptyRow(self):
+        self.getRowCount += 1
+        self.tableWidget.setRowCount(self.getRowCount)
+	
+    def delRow(self):
+        selectedRows = self.tableWidget.selectionModel().selectedRows()
+        iRows = [indx.row() for indx in selectedRows]
+        x = range(self.getRowCount)
+        a = []
+        while len(iRows):
+            b = iRows.pop()
+            a.append(x.index(b))
+        for i in a:
+            self.tableWidget.removeRow(i)
+            self.getRowCount -= 1
+ 

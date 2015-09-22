@@ -39,16 +39,19 @@ class QMdiParameterBoxSubWindow(QtGui.QMdiSubWindow):
 
     def setValue(self, key, value):
         self.subwin_abq.setValue(key, value)
+
+    def setRow(self, i, key, row):
+        self.subwin_abq.setRow(i, key, row)
         
     def data(self):
-        return self.subwin_abq.data
+        return self.subwin_abq.data()
         
     def iteritems(self):
-        for key, min, value, max in self.subwin_abq.data:
+        for key, min, value, max in self.subwin_abq.data():
             yield key, value
     
     def headerData(self):
-        return self.subwin_abq.headerData
+        return self.subwin_abq.headerData()
         
     def setFilename(self, filename):
         self.__filename__ = str(filename)
