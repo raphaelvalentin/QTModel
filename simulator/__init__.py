@@ -1,2 +1,0 @@
-from simulator import ngspice
-
