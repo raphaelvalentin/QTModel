@@ -125,8 +125,8 @@ class Ui_MainWindow(object):
         # override the closeEvent 
         MainWindow.closeEvent = lambda event: self.closeEvent(MainWindow)
             
-        QtCore.QObject.connect(self.mdiArea, QtCore.SIGNAL('subWindowActivated(QMdiSubWindow*)'), lambda subwindow: self.changedFocusSlot(MainWindow, subwindow))
-
+        QtCore.QObject.connect( self.mdiArea, QtCore.SIGNAL('subWindowActivated(QMdiSubWindow*)'), 
+                                lambda subwindow: self.changedFocusSlot(MainWindow, subwindow) )
 
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         
@@ -134,7 +134,6 @@ class Ui_MainWindow(object):
         
     def retranslateUi(self, MainWindow):
         return 
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
 
     # create actions
     def createActions(self, MainWindow):
@@ -205,12 +204,12 @@ class Ui_MainWindow(object):
         icon = QtGui.QIcon.fromTheme("gtk-execute")
         self.ExecuteBenchAct = QtGui.QAction(icon, "Execute", MainWindow,
                 statusTip="Execute the bench",
-                triggered=lambda: self.executeBench(self.DockDataTreeSubWindow.getSelectedRow()))
+                triggered=lambda: self.executeBench(MainWindow, self.DockDataTreeSubWindow.getSelectedRow()))
 
         icon = QtGui.QIcon("UI_Widgets/StyleSheet/graph-256.png")
         self.TracePlotAct = QtGui.QAction(icon, "Trace Plot", MainWindow,
                 statusTip="Trace the plot",
-                triggered=lambda: self.tracePlot(self.DockDataTreeSubWindow.getSelectedRow()))
+                triggered=lambda: self.tracePlot(MainWindow, self.DockDataTreeSubWindow.getSelectedRow()))
 
         icon = QtGui.QIcon("UI_Widgets/StyleSheet/preferences-desktop.svg")
         self.OpenCursorBoxAct = QtGui.QAction(icon, "Cursor Box", MainWindow,
@@ -247,14 +246,6 @@ class Ui_MainWindow(object):
         self.toolbar_table.addAction(self.DelRowAct)
         MainWindow.addToolBar(self.toolbar_table)
        
-    def warningMessage(self, MainWindow, message=''):    
-        QtGui.QMessageBox.warning(MainWindow,
-                            "Warning",
-                            message)
-
-
-       
-
 
     # define the initial menubar
     def menubarUi(self, MainWindow):
@@ -279,6 +270,7 @@ class Ui_MainWindow(object):
         self.menuWindow = QtGui.QMenu(self.menubar)
         self.menuWindow.setObjectName(_fromUtf8("menuWindow"))
         self.menuWindow.setTitle(_translate("MainWindow", "Window", None))
+        self.menuWindow.aboutToShow.connect(lambda: self.menubarUiSubWindowFocus(MainWindow))
         self.menubar.addAction(self.menuWindow.menuAction())
 
         self.menuAction = QtGui.QMenu(self.menubar)
@@ -333,10 +325,35 @@ class Ui_MainWindow(object):
         self.menuHelp.addAction( self.aboutQtAct )
 
 
+    def warningMessage(self, MainWindow, message=''):    
+        QtGui.QMessageBox.warning(MainWindow,
+                            "Warning",
+                            message)
+
     def closeEvent(self, MainWindow):
         QtGui.qApp.closeAllWindows()
         QtGui.QApplication.quit()
         raise SystemExit()
+
+    def menubarUiSubWindowFocus(self, MainWindow):
+        self.menuWindow.clear()
+        self.menuWindow.addAction( self.tileAct )
+        self.menuWindow.addAction( self.cascadeAct )
+        self.menuWindow.addSeparator()
+        for subwindow in self.mdiArea.subWindowList():
+            name = str(subwindow.windowTitle())
+            short_name = name.split('-')[0].strip()
+            def setFocus(subwindow):
+                subwindow.showNormal()
+                subwindow.raise_()
+                subwindow.activateWindow()
+                subwindow.setFocus(True)
+            menu1 = QtGui.QAction(short_name, MainWindow,
+                                  statusTip="Show the window",
+                                  triggered= (lambda x: lambda: setFocus(x))(subwindow)) # fix scoping problem
+            self.menuWindow.addAction( menu1 )
+
+
 
     #---------------------------------------------------------------------------
     def createDockWindows(self, MainWindow):
@@ -376,7 +393,7 @@ class Ui_MainWindow(object):
         self.statusbar.showMessage( 'Failed to delete the item...')
         return False
 
-    def executeBench(self, index):
+    def executeBench(self, MainWindow, index):
 
         def pseudofunction(self, index):
             key = index.text()
@@ -421,35 +438,31 @@ class Ui_MainWindow(object):
 
         for indx in self.DockDataTreeSubWindow.getPlotIndexes():
             if indx.text() in opened:
-                self.tracePlot(indx)
+                self.tracePlot(MainWindow, indx)
 
 
 
-    def tracePlot(self, index):
+    def tracePlot(self, MainWindow, index):
         def pseudofunction(self, index):
             key = index.text()
             value = __data__['plot'][key]
             environ = dict({name:bench for name, bench in __data__['bench'].iteritems()})
             environ[key] = value
-
-            
-
-
             interpy = QInterpy(locals=environ)
-            src = """
-try:
-    plt['currentname'] = '%s'
-    plt['%s'] = {}
-    plt['%s']['xlabel'] = ''
-    plt['%s']['ylabel'] = ''
-    plt['%s']['xunit'] = ''
-    plt['%s']['yunit'] = ''
-    plt['%s']['items'] = []
-    %s()
-except:
-    print 'Warning: plot is empty'
-""" % (key, key, key, key, key, key, key, key)
-            interpy.runsource( src, filename=key )
+            cmd = [ "try:",
+                    "    plt['currentname'] = '%s'"           	% key,
+                    "    plt['%s'] = {}"           		% key,
+                    "    plt['%s']['xlabel'] = ''"           	% key,
+                    "    plt['%s']['ylabel'] = ''"           	% key,
+                    "    plt['%s']['xunit'] = ''"           	% key,
+                    "    plt['%s']['yunit'] = ''"           	% key,
+                    "    plt['%s']['items'] = []"           	% key,
+                    "    %s()"          			% key,
+                    "except:",
+                    "    print 'Warning: plot is empty'"
+                  ]
+            interpy.runsource( '\n'.join(cmd), filename=key )
+
 
             def finished(self, interpy, index):
                 key = index.text()
@@ -462,10 +475,10 @@ except:
                         if subwindow.isClosed() == True:
                             subwindow.reopen( plt )
                         break
-                          
                 if find == False:
                     plotWindow = QMdiPlotSubWindow(self.mdiArea, plt)
                     plotWindow.setName( key )
+
 
             interpy.finished.connect(lambda:finished(self, interpy, index))
             interpy.start()
@@ -476,11 +489,11 @@ except:
         else:
             self.statusbar.showMessage( 'Plot Opening Failed because no plot is selected...')
             
-    def autoexecute(self):
+    def autoexecute(self, MainWindow):
         autoexecute = self.AutoExecuteAct.isChecked()
         if autoexecute:
             index = self.DockDataTreeSubWindow.getBenchIndex()
-            self.executeBench(index)
+            self.executeBench(MainWindow, index)
     
     #---------------------------------------------------------------------------
     def setExistingDirectory(self, MainWindow):    
@@ -530,6 +543,8 @@ except:
                     subwindow = QMdiScriptSubWindow(self.mdiArea)
                     subwindow.setText(f.read())
                     subwindow.setFilename(filename)
+
+
                    
         except IOError:
             self.statusbar.showMessage( 'Failed to load the file. The file cannot be read...')
@@ -621,24 +636,7 @@ except:
             self.OpenCursorBoxAct.setEnabled(False)
             self.AddRowAct.setEnabled(False)
             self.DelRowAct.setEnabled(False)
-
-       
-    #def changedCurrentTreeItem(self, item):
-    #    if len(item)==1:
-    #        root,  = item
-    #    if len(item)==2:
-    #        root, child = item
-    #    if root in ('bench', 'plot'):
-    #        if not self.ExecuteAct in self.menuAction.actions():
-    #            self.menuAction.addAction( self.ExecuteAct )                
-    #    if root in ('model',):
-    #        if self.ExecuteAct in self.menuAction.actions():
-    #            actions = list(self.menuAction.actions())
-    #            self.menuAction.clear()
-    #            for action in actions:
-    #                if not action is self.ExecuteAct:
-    #                    self.menuAction.addAction( action )
-       
+      
     def changedCurrentTreeItem(self, index):
         if index.text() in ('Bench',) or index.parent().text() in ('Bench',):
             self.ExecuteBenchAct.setEnabled(True)
@@ -656,7 +654,6 @@ except:
             self.ExecuteBenchAct.setEnabled(False)
             self.TracePlotAct.setEnabled(False)
             self.OpenCursorBoxAct.setEnabled(False)
-
         self.DelVariableData.setEnabled(True)
 
 
@@ -683,13 +680,12 @@ except:
             self.DockDataTreeSubWindow.setData(__data__)
             self.statusbar.showMessage( 'File attached successfully into the data hierarchy.') 
 
-     
         elif isinstance(subwindow, QMdiParameterBoxSubWindow):
             key = os.path.split(subwindow.filename())[-1]
             VariablesData.__globals__['param'][key] = subwindow
             __data__['param'] = VariablesData.__globals__['param']
             self.DockDataTreeSubWindow.setData(__data__)
-            subwindow.itemChanged.connect( self.autoexecute  )     
+            subwindow.itemChanged.connect( lambda: self.autoexecute(MainWindow)  )
             self.statusbar.showMessage( 'Parameter File attached successfully into the data hierarchy.')
 
 

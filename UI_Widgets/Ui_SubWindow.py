@@ -17,6 +17,8 @@ class QMdiParameterBoxSubWindow(QtGui.QMdiSubWindow):
         super(QMdiParameterBoxSubWindow,self).__init__(parent)
         self.setWindowTitle( 'Untitled3' )
         self.setWindowIcon(QtGui.QIcon('LayoutCreator.ico'))
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
         self.resize(500, 300)
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_QTParamBox()
@@ -62,6 +64,7 @@ class QMdiParameterBoxSubWindow(QtGui.QMdiSubWindow):
         
 # generic
 class QMdiScriptSubWindow(QtGui.QMdiSubWindow):
+
     def __init__(self, parent):
         super(QMdiScriptSubWindow,self).__init__(parent)
         self.setWindowTitle( 'Untitled' )
@@ -72,6 +75,7 @@ class QMdiScriptSubWindow(QtGui.QMdiSubWindow):
         self.subwin_abq.setupUi(widget)
         widget.setParent(self)
         self.setWidget(widget)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.show()
 
     def text(self):
@@ -88,10 +92,7 @@ class QMdiScriptSubWindow(QtGui.QMdiSubWindow):
         return self.__filename__
         
 
-        
 
-        
- 
 class DockDataTreeSubWindow(QtGui.QDockWidget):
 
     currentValueChanged = QtCore.pyqtSignal(object)
@@ -101,6 +102,7 @@ class DockDataTreeSubWindow(QtGui.QDockWidget):
         self.setWindowTitle( 'Project Manager' )
         self.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea)
         self.setMinimumWidth(140)
+
 
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_QDataListView()
@@ -144,6 +146,7 @@ class QMdiPlotSubWindow(QtGui.QMdiSubWindow):
         super(QMdiPlotSubWindow,self).__init__(parent)
         self.setWindowTitle( 'Untitled' )
         self.setWindowIcon(QtGui.QIcon('LayoutCreator.ico'))
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.resize(500, 300)
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_pyQTGraph()
