@@ -197,6 +197,7 @@ class QMdiCursorSubWindow(QtGui.QMdiSubWindow):
         super(QMdiCursorSubWindow,self).__init__(parent)
         self.setWindowTitle( 'Cursor' )
         self.setWindowIcon(QtGui.QIcon('LayoutCreator.ico'))
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.resize(500, 400)
         widget = QtGui.QWidget()
         self.subwin_abq = Ui_QCursorWindow()
