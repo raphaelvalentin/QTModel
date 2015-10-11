@@ -404,18 +404,29 @@ class Ui_MainWindow(object):
             instances = {}
             for subwindow in VariablesData.__globals__['param'].values():
                 instances.update( dict(subwindow.iteritems()) )
-            cmd = ";".join([ 'kwargs = %s'        % str(instances), 
-                             'obj = %s'           % key,
-                             'result = %s(**kwargs)'   % key ,
-                             'obj.__dict__.update(result.__dict__)' ,
-                            ])
-            interpy.runsource(cmd, filename=key)
+            cmd = [ "import sys, traceback",
+                    "try:",
+                    "    kwargs = %s"           	% str(instances),
+                    "    obj = %s"           		% key,
+                    "    result = %s(**kwargs)"           	% key,
+                    "    obj.__dict__.update(result.__dict__)",
+                    "except BaseException, e:",
+                    "    type, value, tb = sys.exc_info()",
+                    "    for name, noline, funcname, message in traceback.extract_tb(tb):",
+                    "        if name=='<script>':",
+                    "            print 'Error at line %d: %s' % (noline, str(e))",
+                    "    print ",
+                  ]
+            interpy.runsource( "\n".join(cmd), filename=key )
 
             def finished(self, interpy, index):
                 key = index.text()
-                obj = interpy.locals['obj']
-                __data__['bench'][key]  = obj
-                self.DockDataTreeSubWindow.setData(__data__)
+                obj = interpy.locals.get('obj', None)
+                if obj:
+                    __data__['bench'][key]  = obj
+                    self.DockDataTreeSubWindow.setData(__data__)
+                else:
+                    raise Exception('Error: an error occurs during the bench simulation.')
                     
             interpy.finished.connect(lambda:finished(self, interpy, index))
             interpy.start()
@@ -459,7 +470,8 @@ class Ui_MainWindow(object):
                     "    plt['%s']['items'] = []"           	% key,
                     "    %s()"          			% key,
                     "except:",
-                    "    print 'Warning: plot is empty'"
+                    "    print 'Warning: plot is empty'",
+                    "    print"
                   ]
             interpy.runsource( '\n'.join(cmd), filename=key )
 

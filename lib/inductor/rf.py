@@ -76,6 +76,21 @@ class sp(Netlist):
         x = self.raw['sp1.sp']
         return x['z12'].imag/sqrt(x['z11'].imag*x['z22'].imag) 
 	
+    def S(self):
+        x = self.raw['sp1.sp']
+        s11, s12, s21, s22 = x['s11'], x['s12'], x['s21'], x['s22']
+        return array([s11, s12, s21, s22])
+
+    def Y(self):
+        x = self.raw['sp1.sp']
+        y11, y12, y21, y22 = x['y11'], x['y12'], x['y21'], x['y22']
+        return array([y11, y12, y21, y22])
+
+    def Z(self):
+        x = self.raw['sp1.sp']
+        z11, z12, z21, z22 = x['z11'], x['z12'], x['z21'], x['z22']
+        return array([z11, z12, z21, z22])
+
 
 class sp2(Netlist):
     __name__ = "sparam"
@@ -117,3 +132,19 @@ class sp2(Netlist):
     def dBS11(self):
         x = self.raw['sp1.sp']
 	return dB(x['s11'])
+
+    def S(self):
+        x = self.raw['sp1.sp']
+        s11 = x['s11']
+        return array([s11])
+
+    def Y(self):
+        x = self.raw['sp1.sp']
+        y11 = x['y11']
+        return array([y11])
+
+    def Z(self):
+        x = self.raw['sp1.sp']
+        z11 = x['z11']
+        return array([z11])
+

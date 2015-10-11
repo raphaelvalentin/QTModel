@@ -30,4 +30,4 @@ class Interpy(code.InteractiveInterpreter):
         except:
             self.showtraceback() 
 
- 
+
