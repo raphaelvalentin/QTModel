@@ -415,6 +415,7 @@ class Ui_MainWindow(object):
                     "    for name, noline, funcname, message in traceback.extract_tb(tb):",
                     "        if name=='<script>':",
                     "            print 'Error at line %d: %s' % (noline, str(e))",
+                    "        print '%s :: Error at line %d: %s' % (name, noline, str(e))",
                     "    print ",
                   ]
             interpy.runsource( "\n".join(cmd), filename=key )
